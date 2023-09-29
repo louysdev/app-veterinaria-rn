@@ -1,4 +1,4 @@
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {
   Modal,
   Text,
@@ -14,17 +14,22 @@ import DatePicker from 'react-native-date-picker';
 
 type FormularioProps = {
   modalVisible: boolean;
-  setModalVisible: (modalVisible: boolean) => void;
+  cerrarModal: () => void;
   setPacientes: (pacientes: any) => void;
   pacientes: any;
+  paciente: any;
+  setPaciente: (paciente: any) => void;
 };
 
 export default function Formulario({
   modalVisible,
-  setModalVisible,
+  cerrarModal,
   pacientes,
   setPacientes,
+  paciente: pacienteEditar,
+  setPaciente: setPacienteEditar,
 }: FormularioProps) {
+  const [id, setId] = useState('');
   const [paciente, setPaciente] = useState('');
   const [propietario, setPropietario] = useState('');
   const [email, setEmail] = useState('');
@@ -41,9 +46,9 @@ export default function Formulario({
       return;
     }
 
+    // Se crear un nuevo paciente, apesar de que se vaya a crear uno nuevo o a editar uno que existe. Debido a que la valiadacion se hara mas tarde
     const nuevoPaciente = {
-      // Generar un ID en base al fecha
-      id: Date.now(),
+      id,
       paciente,
       propietario,
       email,
@@ -52,11 +57,30 @@ export default function Formulario({
       sintomas,
     };
 
-    // Agregar el objeto del paciente en el arreglo principal
-    setPacientes([...pacientes, nuevoPaciente]);
+    if (id) {
+      // Cambia el id del paciente anterior por el nuevo
+      nuevoPaciente.id = id;
+
+      const pacientesActualizados = pacientes.map(
+        (pacienteState: {id: string}) => {
+          // Si hay 4. Se devuelve el nuevo creado y los otros 3 iguales
+          return pacienteState.id === id ? nuevoPaciente : pacienteState;
+        },
+      );
+
+      setPacientes(pacientesActualizados);
+      setPacienteEditar({});
+    } else {
+      nuevoPaciente.id = Date.now().toString();
+
+      // Agregar el objeto del paciente en el arreglo principal
+      setPacientes([...pacientes, nuevoPaciente]);
+    }
+
     // Cerrar modal
-    setModalVisible(!modalVisible);
+    cerrarModal();
     // Resetear formulario
+    setId('');
     setPaciente('');
     setPropietario('');
     setEmail('');
@@ -65,16 +89,41 @@ export default function Formulario({
     setSintomas('');
   };
 
+  // Setear los datos para su edicion
+
+  useEffect(() => {
+    if (pacienteEditar && Object.keys(pacienteEditar).length > 0) {
+      setId(pacienteEditar.id);
+      setPaciente(pacienteEditar.paciente);
+      setPropietario(pacienteEditar.propietario);
+      setEmail(pacienteEditar.email);
+      setTelefono(pacienteEditar.telefono);
+      setFecha(pacienteEditar.fecha);
+      setSintomas(pacienteEditar.sintomas);
+    }
+  }, [pacienteEditar]);
+
   return (
     <Modal animationType="slide" visible={modalVisible}>
       <SafeAreaView style={styles.contenedor}>
         <ScrollView>
           <Text style={styles.titulo}>
-            Nueva <Text style={styles.tituloPalabra}>cita</Text>
+            {pacienteEditar?.id ? 'Editar' : 'Nueva'}{' '}
+            <Text style={styles.tituloPalabra}>cita</Text>
           </Text>
 
           <Pressable
-            onPress={() => setModalVisible(!modalVisible)}
+            onPress={() => {
+              cerrarModal();
+              setPacienteEditar({});
+              setId('');
+              setPaciente('');
+              setPropietario('');
+              setEmail('');
+              setTelefono('');
+              setFecha(new Date());
+              setSintomas('');
+            }}
             style={styles.botonCancelar}>
             <Text style={styles.botonTextoCancelar}>Cerrar</Text>
           </Pressable>
@@ -154,7 +203,9 @@ export default function Formulario({
           </View>
 
           <Pressable style={styles.botonNuevaCita} onPress={handleCita}>
-            <Text style={styles.textoNuevaCita}>Agregar paciente</Text>
+            <Text style={styles.textoNuevaCita}>
+              {pacienteEditar?.id ? 'Editar' : 'Agregar'} paciente
+            </Text>
           </Pressable>
         </ScrollView>
       </SafeAreaView>
@@ -172,7 +223,7 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: '600',
     textAlign: 'center',
-    marginTop: 30,
+    marginTop: 40,
     color: '#fff',
   },
   tituloPalabra: {
