@@ -155,6 +155,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     fontFamily: 'Poppins-Regular',
+    color: '#374151',
   },
   listado: {
     marginTop: 50,
